@@ -1,3 +1,4 @@
+from logging_config import logger
 from fastapi import FastAPI, Depends, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import models
@@ -13,6 +14,9 @@ origins = [
     "https://localhost.tiangolo.com",
     "http://localhost:3000",
     "http://localhost:8080",
+    "http://192.168.2.239:3000",
+    "http://192.168.2.239:3002",
+    "http://192.168.2.104:3000",
 ]
 
 app.add_middleware(
@@ -85,3 +89,14 @@ async def update(id, request: schemas.Trip, db: Session = Depends(get_db)):
     trip.update(dict(request))
     db.commit()
     return {'detail': 'Trip updated.'}
+
+@app.get("/trip", status_code=status.HTTP_200_OK, response_model=List[schemas.ShowTrip])
+async def all(limit=10, sort='latest', db: Session = Depends(get_db)):
+    logger.info(f"Fetching trips with limit={limit}, sort={sort}")
+    try:
+        trip = db.query(models.Trip).limit(limit).all()
+        logger.info(f"Found {len(trip)} trips")
+        return trip
+    except Exception as e:
+        logger.error(f"Error fetching trips: {str(e)}")
+        raise
